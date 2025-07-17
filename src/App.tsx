@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { initializeAudio } from './utils/audioContext';
 import { createAudioNodes } from './utils/audioNodes';
 import { useAudioLoader } from './hooks/useAudioLoader';
 import { usePlayback } from './hooks/usePlayback';
 import { useProgressTracking } from './hooks/useProgressTracking';
+import { useEffects } from './hooks/useEffects';
+import { EffectControls } from './components/EffectControls';
 import { formatTime, calculateProgress } from './utils/timeUtils';
 import type { AudioNodes } from './types/audio';
 
@@ -15,11 +17,19 @@ function App() {
 
   const { loadAudio, isLoading, error: loadError, duration } = useAudioLoader();
   const { currentTime, startTracking, stopTracking } = useProgressTracking();
+  const { effects, updateEffect, applyAllEffects, resetEffects } = useEffects();
 
   const { playing, error: playbackError, togglePlayback, stop } = usePlayback({
     onPlayStart: (audioDuration) => startTracking(audioDuration),
     onPlayStop: () => stopTracking(),
   });
+
+  // Apply initial effects when audio is loaded
+  useEffect(() => {
+    if (audioLoaded && nodes.player) {
+      applyAllEffects(nodes as AudioNodes);
+    }
+  }, [audioLoaded, nodes, applyAllEffects]);
 
   const handleInitialize = async () => {
     try {
@@ -56,7 +66,7 @@ function App() {
 
   return (
     <div>
-      <h1>Audio Player</h1>
+      <h1>Audio Player with Effects</h1>
 
       {!isInitialized ? (
         <div>
@@ -81,7 +91,7 @@ function App() {
         <div>
           <p>✓ Audio initialized</p>
           <p>✓ Audio loaded ({formatTime(duration)})</p>
-          <p>Step 3: Playback with progress</p>
+          <p>Step 4: Play with real-time effects!</p>
 
           {/* Playback Controls */}
           <div>
@@ -104,7 +114,7 @@ function App() {
               <strong>Progress:</strong> {calculateProgress(currentTime, duration).toFixed(1)}%
             </div>
 
-            {/* Simple Progress Bar */}
+            {/* Progress Bar */}
             <div style={{
               width: '300px',
               height: '20px',
@@ -124,6 +134,14 @@ function App() {
             <p>Status: {playing ? 'Playing' : 'Stopped'}</p>
             {playbackError && <p>Playback error: {playbackError}</p>}
           </div>
+
+          {/* Effects Controls */}
+          <EffectControls
+            effects={effects}
+            nodes={nodes as AudioNodes}
+            onEffectChange={updateEffect}
+            onReset={resetEffects}
+          />
         </div>
       )}
     </div>
