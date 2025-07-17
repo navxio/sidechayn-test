@@ -1,3 +1,5 @@
+import * as Tone from 'tone';
+
 /**
  * Audio effects configuration
  */
@@ -33,3 +35,14 @@ export const DEFAULT_EFFECTS: AudioEffects = {
   highEQ: 0,
   volume: 0.7,
 };
+
+/**
+ * Audio Effect Nodes via the web audio api
+ */
+export interface AudioNodes {
+  player: Tone.Player | null;
+  volume: Tone.Volume;
+  pitchShift: Tone.PitchShift;
+  eq3: Tone.EQ3;
+  reverb: Tone.Reverb;
+}
