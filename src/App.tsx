@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { initializeAudio } from './utils/audioContext';
 import { createAudioNodes } from './utils/audioNodes';
 import { useAudioLoader } from './hooks/useAudioLoader';
 import { usePlayback } from './hooks/usePlayback';
 import { useProgressTracking } from './hooks/useProgressTracking';
 import { useEffects } from './hooks/useEffects';
+import { PlayerLayout } from './components/PlayerLayout';
+import { StatusDisplay } from './components/StatusDisplay';
+import { PlaybackControls } from './components/PlaybackControls';
 import { EffectControls } from './components/EffectControls';
-import { formatTime, calculateProgress } from './utils/timeUtils';
+import { formatTime } from './utils/timeUtils';
 import type { AudioNodes } from './types/audio';
 
 function App() {
@@ -36,7 +39,6 @@ function App() {
       await initializeAudio();
       const audioNodes = createAudioNodes();
       setNodes({ ...audioNodes, player: null });
-      console.log('Audio nodes created:', audioNodes);
       setIsInitialized(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -50,7 +52,6 @@ function App() {
       const result = await loadAudio(nodes as Omit<AudioNodes, 'player'>);
       setNodes(prev => ({ ...prev, player: result.player }));
       setAudioLoaded(true);
-      console.log('Audio loaded, duration:', result.duration);
     } catch (err) {
       console.error('Load failed:', err);
     }
@@ -65,86 +66,118 @@ function App() {
   };
 
   return (
-    <div>
-      <h1>Audio Player with Effects</h1>
+    <PlayerLayout title="Live Audio Effects Player">
 
-      {!isInitialized ? (
-        <div>
-          <p>Step 1: Initialize audio context</p>
-          <button onClick={handleInitialize}>Initialize Audio</button>
-          {error && <p>Error: {error}</p>}
-        </div>
-      ) : !audioLoaded ? (
-        <div>
-          <p>✓ Audio initialized</p>
-          <p>Step 2: Load demo MP3</p>
-
-          <button onClick={handleLoadAudio} disabled={isLoading}>
-            Load Demo Audio
-          </button>
-
-          {isLoading && <p>Loading audio...</p>}
-          {loadError && <p>Load error: {loadError}</p>}
-          {duration > 0 && <p>Duration: {formatTime(duration)}</p>}
-        </div>
-      ) : (
-        <div>
-          <p>✓ Audio initialized</p>
-          <p>✓ Audio loaded ({formatTime(duration)})</p>
-          <p>Step 4: Play with real-time effects!</p>
-
-          {/* Playback Controls */}
-          <div>
-            <button onClick={handleTogglePlayback}>
-              {playing ? 'Pause' : 'Play'}
-            </button>
-
-            <button onClick={handleStop} disabled={!playing}>
-              Stop
+      {/* Initialization Step */}
+      {!isInitialized && (
+        <>
+          <StatusDisplay
+            step={1}
+            totalSteps={3}
+            status="Initialize Audio Context"
+            isComplete={false}
+            error={error}
+          />
+          <div style={{ textAlign: 'center' }}>
+            <button
+              onClick={handleInitialize}
+              style={{
+                padding: '12px 24px',
+                fontSize: '16px',
+                backgroundColor: '#007bff',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              Initialize Audio
             </button>
           </div>
+        </>
+      )}
 
-          {/* Progress Display */}
-          <div style={{ marginTop: '20px' }}>
-            <div>
-              <strong>Time:</strong> {formatTime(currentTime)} / {formatTime(duration)}
-            </div>
-
-            <div style={{ marginTop: '10px' }}>
-              <strong>Progress:</strong> {calculateProgress(currentTime, duration).toFixed(1)}%
-            </div>
-
-            {/* Progress Bar */}
-            <div style={{
-              width: '300px',
-              height: '20px',
-              backgroundColor: '#ddd',
-              marginTop: '10px',
-              borderRadius: '4px',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                width: `${calculateProgress(currentTime, duration)}%`,
-                height: '100%',
-                backgroundColor: '#4CAF50',
-                transition: 'width 0.1s'
-              }}></div>
-            </div>
-
-            <p>Status: {playing ? 'Playing' : 'Stopped'}</p>
-            {playbackError && <p>Playback error: {playbackError}</p>}
+      {/* Loading Step */}
+      {isInitialized && !audioLoaded && (
+        <>
+          <StatusDisplay
+            step={1}
+            totalSteps={3}
+            status="Initialize Audio Context"
+            isComplete={true}
+          />
+          <StatusDisplay
+            step={2}
+            totalSteps={3}
+            status="Load Demo Audio File"
+            isComplete={false}
+            error={loadError}
+          />
+          <div style={{ textAlign: 'center' }}>
+            <button
+              onClick={handleLoadAudio}
+              disabled={isLoading}
+              style={{
+                padding: '12px 24px',
+                fontSize: '16px',
+                backgroundColor: isLoading ? '#6c757d' : '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: isLoading ? 'not-allowed' : 'pointer'
+              }}
+            >
+              {isLoading ? 'Loading...' : 'Load Demo Audio'}
+            </button>
+            {duration > 0 && (
+              <p style={{ marginTop: '10px', color: '#6c757d' }}>
+                Duration: {formatTime(duration)}
+              </p>
+            )}
           </div>
+        </>
+      )}
 
-          {/* Effects Controls */}
+      {/* Player Interface */}
+      {audioLoaded && (
+        <>
+          <StatusDisplay
+            step={1}
+            totalSteps={3}
+            status="Initialize Audio Context"
+            isComplete={true}
+          />
+          <StatusDisplay
+            step={2}
+            totalSteps={3}
+            status="Load Demo Audio File"
+            isComplete={true}
+          />
+          <StatusDisplay
+            step={3}
+            totalSteps={3}
+            status="Ready to Play!"
+            isComplete={true}
+          />
+
+          <PlaybackControls
+            playing={playing}
+            currentTime={currentTime}
+            duration={duration}
+            onTogglePlayback={handleTogglePlayback}
+            onStop={handleStop}
+            error={playbackError}
+          />
+
           <EffectControls
             effects={effects}
             nodes={nodes as AudioNodes}
             onEffectChange={updateEffect}
             onReset={resetEffects}
           />
-        </div>
+        </>
       )}
-    </div>
+    </PlayerLayout>
   );
 }
 
