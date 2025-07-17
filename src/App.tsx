@@ -19,12 +19,20 @@ function App() {
   const [audioLoaded, setAudioLoaded] = useState(false);
 
   const { loadAudio, isLoading, error: loadError, duration } = useAudioLoader();
-  const { currentTime, startTracking, stopTracking } = useProgressTracking();
+  const {
+    currentTime,
+    startTracking,
+    pauseTracking,
+    resumeTracking,
+    stopTracking
+  } = useProgressTracking();
   const { effects, updateEffect, applyAllEffects, resetEffects } = useEffects();
 
   const { playing, error: playbackError, togglePlayback, stop } = usePlayback({
     onPlayStart: (audioDuration) => startTracking(audioDuration),
     onPlayStop: () => stopTracking(),
+    onPlayPause: () => pauseTracking(),
+    onPlayResume: () => resumeTracking(),
   });
 
   // Apply initial effects when audio is loaded
@@ -61,8 +69,8 @@ function App() {
     await togglePlayback(nodes as AudioNodes, duration);
   };
 
-  const handleStop = () => {
-    stop(nodes as AudioNodes);
+  const handleStop = async () => {
+    await stop(nodes as AudioNodes);
   };
 
   return (
