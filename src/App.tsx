@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { initializeAudio } from './utils/audioContext';
 import { createAudioNodes } from './utils/audioNodes';
 import { useAudioLoader } from './hooks/useAudioLoader';
 import { usePlayback } from './hooks/usePlayback';
+import { useProgressTracking } from './hooks/useProgressTracking';
+import { formatTime, calculateProgress } from './utils/timeUtils';
 import type { AudioNodes } from './types/audio';
 
 function App() {
@@ -12,7 +14,12 @@ function App() {
   const [audioLoaded, setAudioLoaded] = useState(false);
 
   const { loadAudio, isLoading, error: loadError, duration } = useAudioLoader();
-  const { playing, error: playbackError, togglePlayback, stop } = usePlayback();
+  const { currentTime, startTracking, stopTracking } = useProgressTracking();
+
+  const { playing, error: playbackError, togglePlayback, stop } = usePlayback({
+    onPlayStart: (audioDuration) => startTracking(audioDuration),
+    onPlayStop: () => stopTracking(),
+  });
 
   const handleInitialize = async () => {
     try {
@@ -40,7 +47,7 @@ function App() {
   };
 
   const handleTogglePlayback = async () => {
-    await togglePlayback(nodes as AudioNodes);
+    await togglePlayback(nodes as AudioNodes, duration);
   };
 
   const handleStop = () => {
@@ -68,14 +75,15 @@ function App() {
 
           {isLoading && <p>Loading audio...</p>}
           {loadError && <p>Load error: {loadError}</p>}
-          {duration > 0 && <p>Duration: {duration.toFixed(2)} seconds</p>}
+          {duration > 0 && <p>Duration: {formatTime(duration)}</p>}
         </div>
       ) : (
         <div>
           <p>✓ Audio initialized</p>
-          <p>✓ Audio loaded ({duration.toFixed(2)}s)</p>
-          <p>Step 3: Playback controls</p>
+          <p>✓ Audio loaded ({formatTime(duration)})</p>
+          <p>Step 3: Playback with progress</p>
 
+          {/* Playback Controls */}
           <div>
             <button onClick={handleTogglePlayback}>
               {playing ? 'Pause' : 'Play'}
@@ -86,8 +94,36 @@ function App() {
             </button>
           </div>
 
-          <p>Status: {playing ? 'Playing' : 'Stopped'}</p>
-          {playbackError && <p>Playback error: {playbackError}</p>}
+          {/* Progress Display */}
+          <div style={{ marginTop: '20px' }}>
+            <div>
+              <strong>Time:</strong> {formatTime(currentTime)} / {formatTime(duration)}
+            </div>
+
+            <div style={{ marginTop: '10px' }}>
+              <strong>Progress:</strong> {calculateProgress(currentTime, duration).toFixed(1)}%
+            </div>
+
+            {/* Simple Progress Bar */}
+            <div style={{
+              width: '300px',
+              height: '20px',
+              backgroundColor: '#ddd',
+              marginTop: '10px',
+              borderRadius: '4px',
+              overflow: 'hidden'
+            }}>
+              <div style={{
+                width: `${calculateProgress(currentTime, duration)}%`,
+                height: '100%',
+                backgroundColor: '#4CAF50',
+                transition: 'width 0.1s'
+              }}></div>
+            </div>
+
+            <p>Status: {playing ? 'Playing' : 'Stopped'}</p>
+            {playbackError && <p>Playback error: {playbackError}</p>}
+          </div>
         </div>
       )}
     </div>
