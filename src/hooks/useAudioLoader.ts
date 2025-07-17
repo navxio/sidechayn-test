@@ -8,9 +8,6 @@ export const useAudioLoader = () => {
   const [error, setError] = useState<string | null>(null);
   const [duration, setDuration] = useState(0);
 
-  /**
-   * Load demo audio and connect to the effect chain
-   */
   const loadAudio = useCallback(async (
     nodes: Omit<AudioNodes, 'player'>
   ): Promise<{ player: Tone.Player; duration: number }> => {
@@ -20,8 +17,9 @@ export const useAudioLoader = () => {
     try {
       const player = await loadAudioFromUrl(DEMO_AUDIO_URL);
 
-      // Connect player to effect chain
+      // Connect player to volume (which goes directly to speakers)
       player.connect(nodes.volume);
+      console.log('Player -> Volume -> Speakers');
 
       const audioDuration = player.buffer.duration;
       setDuration(audioDuration);

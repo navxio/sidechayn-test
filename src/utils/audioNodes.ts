@@ -1,32 +1,29 @@
 import * as Tone from 'tone';
 import type { AudioNodes } from '../types/audio';
 
-/**
- * Create and connect audio effect chain
- * 
- * Audio flow:
- * Player -> Volume -> PitchShift -> EQ3 -> Reverb -> Speakers
- * 
- * Each node processes the audio and passes it to the next one
- */
 export const createAudioNodes = (): Omit<AudioNodes, 'player'> => {
-  // Create nodes (order matters for the chain)
-  const reverb = new Tone.Reverb(0.5).toDestination();
+  console.log('Creating audio nodes...');
+
+  // Create reverb with minimal effect initially
+  const reverb = new Tone.Reverb({
+    decay: 0.1,  // Very short decay
+    wet: 0       // Start with 0% wet signal (no reverb effect)
+  }).toDestination();
+
   const eq3 = new Tone.EQ3().connect(reverb);
   const pitchShift = new Tone.PitchShift().connect(eq3);
-  const volume = new Tone.Volume().connect(pitchShift);
+  const volume = new Tone.Volume(0).connect(pitchShift);
+
+  console.log('Complete chain: Player -> Volume -> PitchShift -> EQ3 -> Reverb(0%) -> Speakers');
 
   return {
-    volume,      // First in chain (player will connect here)
+    volume,
     pitchShift,
     eq3,
-    reverb,      // Last in chain
+    reverb,
   };
 };
 
-/**
- * Clean up audio nodes (complete the lifecycle)
- */
 export const disposeNodes = (nodes: Partial<AudioNodes>): void => {
   Object.values(nodes).forEach(node => {
     if (node) {
